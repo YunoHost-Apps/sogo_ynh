@@ -12,6 +12,12 @@ is_public=$3
 path="/SOGo"
 codename=$(lsb_release -c -s)
 
+if [[ $is_public == 0 ]]
+then
+    is_public="No"
+else
+    is_public="Yes"
+fi
 
 # Save app settings
 sudo yunohost app setting $app admin -v "$admin"
