@@ -32,7 +32,15 @@ sudo sh -c 'echo "deb http://inverse.ca/debian-v3 $codename $codename" > sogo.li
 
 
 #Add Repository Key
-sudo apt-key adv --keyserver keys.gnupg.net --recv-key 0x810273C4
+
+# because sometime it fail. So try some time before to exit
+i=0
+while ! apt-key adv --keyserver keys.gnupg.net --recv-key 0x810273C4; do
+    if [[ $((i++)) -gt 10 ]]; then
+        ynh_die "Error while get gnupg key"
+    fi
+    sleep 1
+done
 
 #Update Package Cache
 sudo apt-get update
