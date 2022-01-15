@@ -36,7 +36,6 @@ smtp_port=$(ynh_find_port --port $((port+1)))
 # STORE SETTINGS FROM MANIFEST
 ynh_script_progression --message="Storing installation settings..."
 ynh_app_setting_set --app $app --key admin --value $admin
-ynh_app_setting_set --app $app --key is_public --value $is_public
 ynh_app_setting_set --app $app --key smtp_port --value $smtp_port
 ynh_app_setting_set --app $app --key web_port --value $port
 

@@ -4,10 +4,10 @@
     "packaging_format": 1,
     "license": "LGPL-2.1,GPL-2.0",
     "url": "https://sogo.nu/",
-    "version": "4.0.7-1~ynh2",
+    "version": "5.0.1~ynh1",
     "description": {
-        "en": "An opensource groupware for E-Mail, Contacts and Calender.",
-        "fr": "Un groupware opensource pour les e-mail, contacts et calendrier" 
+        "en": "Opensource groupware for E-Mail, Contacts and Calender",
+        "fr": "Groupware opensource pour les e-mail, contacts et calendrier" 
     },
     "maintainer": {
         "name": "Josué Tille",
@@ -30,29 +30,15 @@
         "install" : [
             {
                 "name": "domain",
-                "type": "domain",
-                "ask": {
-                    "en": "Choose a domain name for SOGo",
-                    "fr": "Choisissez un nom de domaine pour SOGo"
-                },
-                "example": "example.com"
+                "type": "domain"
             },
             {
                 "name": "admin",
-                "type": "user",
-                "ask": {
-                    "en": "Choose an admin user",
-                    "fr": "Choisissez l’administrateur"
-                },
-                "example": "johndoe"
+                "type": "user"
             },
             {
                 "name": "is_public",
                 "type": "boolean",
-                "ask": {
-                    "en": "Is it a public site ? To be able to use caldav and cardav you need to set as public.",
-                    "fr": "Est-ce un site public ? Pour pouvoir utiliser caldav et cardav vous devz mettre en public."
-                },
                 "help": { 
                     "en": "If it's not public, everybody which want to access to any page of SOGo need to be authenticated on the SSO. On the public mode anybody can access to the authentication page. The shared calendar will be also accessible by anybody who has this link",
                     "fr": "Si n'est pas publique, n'importe qui veux accéder à n'importe quelle page de SOGo doit être authentifié dans le SSO. Dans le mode publique n'importe qui peut accéder à la page d'authentification de SOGo. Les agenda partagé seront aussi accessible par n'import qui qui à ce liens."

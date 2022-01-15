@@ -20,7 +20,6 @@ ynh_script_progression --message="Loading installation settings..."
 domain=$(ynh_app_setting_get --app $app --key domain)
 path_url=$(ynh_normalize_url_path --path_url $(ynh_app_setting_get --app $app --key path))
 admin=$(ynh_app_setting_get --app $app --key admin)
-is_public=$(ynh_app_setting_get --app $app --key is_public)
 port=$(ynh_app_setting_get --app $app --key web_port)
 smtp_port=$(ynh_app_setting_get --app $app --key smtp_port)
 db_name=$(ynh_app_setting_get --app $app --key db_name)
@@ -42,18 +41,6 @@ ynh_abort_if_errors
 #=================================================
 
 ynh_script_progression --message="Fixing old settings..." --weight=1
-
-if [[ ${is_public,,*} = "yes" ]]
-then
-    is_public=1
-    ynh_app_setting_set --app $app --key is_public --value 1
-fi
-
-if [[ ${is_public,,*} = "no" ]]
-then
-    is_public=0
-    ynh_app_setting_set --app $app --key is_public --value 0
-fi
 
 if [[ -z $port ]]
 then
