@@ -23,7 +23,7 @@ admin=$(ynh_app_setting_get --app $app --key admin)
 port=$(ynh_app_setting_get --app $app --key web_port)
 smtp_port=$(ynh_app_setting_get --app $app --key smtp_port)
 db_name=$(ynh_app_setting_get --app $app --key db_name)
-db_user=$(ynh_app_setting_get --app $app --key db_user)
+db_user=$db_name
 db_pwd=$(ynh_app_setting_get --app $app --key mysqlpwd)
 
 # Backup the current version of the app
