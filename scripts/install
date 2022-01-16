@@ -23,7 +23,6 @@ is_public=$YNH_APP_ARG_IS_PUBLIC
 
 # Set variable
 path_url="/SOGo"
-# final_path="/opt/yunohost/$app"
 
 # Register (book) web path
 ynh_webpath_register --app $app --domain $domain --path_url $path_url

@@ -18,12 +18,8 @@ ynh_script_progression --message="Loading settings..."
 
 domain=$(ynh_app_setting_get --app $app --key domain)
 path_url=$(ynh_app_setting_get --app $app --key path)
-final_path=$(ynh_app_setting_get --app $app --key final_path)
 db_name=$(ynh_app_setting_get --app $app --key db_name)
-
-# CHECK IF THE APP CAN BE RESTORED
-ynh_webpath_available --domain $domain --path_url $path_url \
-    || ynh_die --message "Path not available: ${domain}${path_url}"
+db_user=$db_name
 
 #=================================================
 # STANDARD RESTORATION STEPS
@@ -39,7 +35,6 @@ ynh_restore
 
 # RESTORE THE MYSQL DATABASE
 ynh_script_progression --message="Restoring database..." --weight=3
-db_user=$db_name
 db_pwd=$(ynh_app_setting_get --app $app --key mysqlpwd)
 ynh_mysql_setup_db --db_name $db_name --db_user $db_user --db_pwd $db_pwd
 ynh_mysql_connect_as --user $db_user --password $db_pwd --database $db_name < ./db.sql
