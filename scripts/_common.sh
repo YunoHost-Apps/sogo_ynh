@@ -4,26 +4,18 @@
 # SET ALL CONSTANTS
 #=================================================
 
-app=$YNH_APP_INSTANCE_NAME
+# dependencies used by the app
+pkg_dependencies="sogo stunnel4 memcached"
 
 #=================================================
 # DEFINE ALL COMMON FONCTIONS
 #=================================================
-
-install_dependance() {
-    ynh_install_app_dependencies sogo stunnel4 memcached
-}
 
 config_stunnel() {
     ynh_add_config --template="stunnel.conf" --destination="/etc/stunnel/$app.conf"
 
     # Enable stunnel at startup
     ynh_replace_string --match_string "ENABLED=0" --replace_string "ENABLED=1" --target_file /etc/default/stunnel4
-}
-
-config_cron() {
-    ynh_add_config --template="cron" --destination="/etc/cron.d/$app"
-    systemctl restart cron
 }
 
 config_nginx() {

@@ -3,105 +3,172 @@
 #=================================================
 # GENERIC START
 #=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
 
-# Import common cmd
-source ./experimental_helper.sh
-source ./_common.sh
-
-# Source YunoHost helpers
+source _common.sh
 source /usr/share/yunohost/helpers
 
-# Stop script if errors
+#=================================================
+# MANAGE SCRIPT FAILURE
+#=================================================
+
+ynh_clean_setup () {
+    ### Remove this function if there's nothing to clean before calling the remove script.
+    true
+}
+# Exit if an error occurs during the execution of the script
 ynh_abort_if_errors
 
-ynh_script_progression --message="Validating installation parameters..."
-
+#=================================================
 # RETRIEVE ARGUMENTS FROM THE MANIFEST
+#=================================================
+
 domain=$YNH_APP_ARG_DOMAIN
 admin=$YNH_APP_ARG_ADMIN
 is_public=$YNH_APP_ARG_IS_PUBLIC
 
+app=$YNH_APP_INSTANCE_NAME
+
+#=================================================
+# CHECK IF THE APP CAN BE INSTALLED WITH THESE ARGS
+#=================================================
+ynh_script_progression --message="Validating installation parameters..." --weight=1
+
 # Set variable
 path_url="/SOGo"
-# final_path="/opt/yunohost/$app"
 
 # Register (book) web path
-ynh_webpath_register --app $app --domain $domain --path_url $path_url
+ynh_webpath_register --app=$app --domain=$domain --path_url=$path_url
 
-# Find a port for SOGo
-ynh_script_progression --message="Finding available ports..."
-port=$(ynh_find_port --port 20000)
-smtp_port=$(ynh_find_port --port $((port+1)))
-
+#=================================================
 # STORE SETTINGS FROM MANIFEST
-ynh_script_progression --message="Storing installation settings..."
-ynh_app_setting_set --app $app --key admin --value $admin
-ynh_app_setting_set --app $app --key is_public --value $is_public
-ynh_app_setting_set --app $app --key smtp_port --value $smtp_port
-ynh_app_setting_set --app $app --key web_port --value $port
+#=================================================
+ynh_script_progression --message="Storing installation settings..." --weight=1
+
+ynh_app_setting_set --app=$app --key=domain --value=$domain
+ynh_app_setting_set --app=$app --key=path --value=$path_url
+ynh_app_setting_set --app=$app --key=admin --value=$admin
 
 #=================================================
 # STANDARD MODIFICATIONS
 #=================================================
+# FIND AND OPEN A PORT
+#=================================================
+ynh_script_progression --message="Finding an available port..." --weight=1
 
+port=$(ynh_find_port --port=20000)
+ynh_app_setting_set --app=$app --key=web_port --value=$port
+
+smtp_port=$(ynh_find_port --port=$((port+1)))
+ynh_app_setting_set --app=$app --key=smtp_port --value=$smtp_port
+
+#=================================================
 # INSTALL DEPENDENCIES
-ynh_script_progression --message="Installing dependencies..." --weight=7
-install_dependance
+#=================================================
+ynh_script_progression --message="Installing dependencies..." --weight=1
 
+ynh_install_app_dependencies $pkg_dependencies
+
+#=================================================
 # CREATE A MYSQL DATABASE
-ynh_script_progression --message="Configuring MySQL database..."
-db_name=$(ynh_sanitize_dbid $app)
-db_user=$db_name
-ynh_app_setting_set --app $app --key db_name --value $db_name
-ynh_app_setting_set --app $app --key db_user --value $db_user
-ynh_mysql_setup_db --db_name $db_name --db_user $db_user
+#=================================================
+ynh_script_progression --message="Creating a MySQL database..." --weight=1
 
+db_name=$(ynh_sanitize_dbid --db_name=$app)
+db_user=$db_name
+ynh_app_setting_set --app=$app --key=db_name --value=$db_name
+ynh_mysql_setup_db --db_user=$db_user --db_name=$db_name
+
+#=================================================
+# ADD A CONFIGURATION
+#=================================================
 ynh_script_progression --message="Configuring application..." --weight=3
 
 # Configure SOGO
 mkdir -p /etc/$app
-ynh_add_config --template="sogo.conf" --destination="/etc/$app/sogo.conf"
+ynh_add_config --template="../conf/sogo.conf" --destination="/etc/$app/sogo.conf"
 
 # Configure stunnel
 # To fix the issue https://sogo.nu/bugs/view.php?id=31 we need stunnel to be able to connect correctly to the smtp server
-config_stunnel
+ynh_add_config --template="../conf/stunnel.conf" --destination="/etc/stunnel/$app.conf"
 
-# Install crontab
-config_cron
+# Enable stunnel at startup
+ynh_replace_string --match_string="ENABLED=0" --replace_string="ENABLED=1" --target_file="/etc/default/stunnel4"
 
-#Configure Nginx
-ynh_script_progression --message="Configuring nginx..." --weight=1
+#=================================================
+# SETUP A CRON
+#=================================================
+ynh_script_progression --message="Setuping a cron..." --weight=1
+
+ynh_add_config --template="../conf/cron" --destination="/etc/cron.d/$app"
+chown root: "/etc/cron.d/$app"
+chmod 644 "/etc/cron.d/$app"
+
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+ynh_script_progression --message="Configuring NGINX web server..." --weight=1
+
 config_nginx
+
+#=================================================
+# SECURE FILES AND DIRECTORIES
+#=================================================
+ynh_script_progression --message="Protecting directory..." --weight=1
+
+chown -R $app:$app /etc/$app
+chmod u=rwX,g=rX,o= -R /etc/$app
+chown -R $app:$app /var/log/$app
+chmod u=rwX,g=rX,o= -R /var/log/$app
 
 #=================================================
 # GENERIC FINALIZATION
 #=================================================
+# SETUP LOGROTATE
+#=================================================
+ynh_script_progression --message="Configuring log rotation..." --weight=1
 
-# SECURE FILES AND DIRECTORIES
-ynh_script_progression --message="Protecting directory..."
-set_permission
+ynh_use_logrotate --logfile="/var/log/$app/sogo.log" --nonappend
 
-# configure the sso
-ynh_script_progression --message="Configuring permissions..."
+#=================================================
+# INTEGRATE SERVICE IN YUNOHOST
+#=================================================
+ynh_script_progression --message="Integrating service in YunoHost..." --weight=1
+
+yunohost service add $app --description="Groupware for E-Mail, Contacts and Calender" --log="/var/log/$app/$app.log"
+
+#=================================================
+# START SYSTEMD SERVICE
+#=================================================
+ynh_script_progression --message="Starting a systemd service..." --weight=1
+
+ynh_systemd_action --service_name=$app --action="restart" --log_path="systemd"
+ynh_systemd_action --service_name=stunnel4 --action="restart" --log_path="systemd"
+
+#=================================================
+# SETUP SSOWAT
+#=================================================
+ynh_script_progression --message="Configuring permissions..." --weight=1
+
+if [ $is_public -eq 1 ]
+then
+    ynh_permission_update --permission="main" --add="visitors"
+fi
+
 ynh_permission_create --permission="sync_client" --allowed='visitors' --auth_header=false\
     --label="Sync client" --protected=true --show_tile=false\
     --additional_urls="/Microsoft-Server-ActiveSync" "/principals" "/.well-known/caldav" "/.well-known/carddav"
 
-if [ "$is_public" == '1' ];
-then
-    ynh_permission_update --permission "main" --add "visitors"
-fi
+#=================================================
+# RELOAD NGINX
+#=================================================
+ynh_script_progression --message="Reloading NGINX web server..." --weight=1
 
-# SETUP LOGROTATE
-ynh_script_progression --message="Configuring log rotation..."
-ynh_use_logrotate --logfile /var/log/$app/sogo.log --nonappend
+ynh_systemd_action --service_name=nginx --action=reload
 
-# Register service
-yunohost service add $app --log "/var/log/$app/sogo.log"
-
-# Restart services
-ynh_script_progression --message="Starting sogo services..." --weight=3
-systemctl restart sogo
-systemctl restart stunnel4
+#=================================================
+# END OF SCRIPT
+#=================================================
 
 ynh_script_progression --message="Installation of $app completed" --last

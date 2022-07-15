@@ -3,36 +3,44 @@
 #=================================================
 # GENERIC START
 #=================================================
-
-# Import common cmd
-source ./experimental_helper.sh
-source ./_common.sh
-
 # IMPORT GENERIC HELPERS
+#=================================================
+
+source _common.sh
 source /usr/share/yunohost/helpers
 
-# Exit if an error occurs during the execution of the script
-ynh_abort_if_errors
-
-ynh_script_progression --message="Loading installation settings..."
-
+#=================================================
 # LOAD SETTINGS
-domain=$(ynh_app_setting_get --app $app --key domain)
-path_url=$(ynh_normalize_url_path --path_url $(ynh_app_setting_get --app $app --key path))
-admin=$(ynh_app_setting_get --app $app --key admin)
-is_public=$(ynh_app_setting_get --app $app --key is_public)
-port=$(ynh_app_setting_get --app $app --key web_port)
-smtp_port=$(ynh_app_setting_get --app $app --key smtp_port)
-db_name=$(ynh_app_setting_get --app $app --key db_name)
-db_user=$(ynh_app_setting_get --app $app --key db_user)
-db_pwd=$(ynh_app_setting_get --app $app --key mysqlpwd)
+#=================================================
+ynh_script_progression --message="Loading installation settings..." --weight=1
+
+app=$YNH_APP_INSTANCE_NAME
+
+domain=$(ynh_app_setting_get --app=$app --key=domain)
+path_url=$(ynh_app_setting_get --app=$app --key=path)
+admin=$(ynh_app_setting_get --app=$app --key=admin)
+port=$(ynh_app_setting_get --app=$app --key=web_port)
+smtp_port=$(ynh_app_setting_get --app=$app --key=smtp_port)
+db_name=$(ynh_app_setting_get --app=$app --key=db_name)
+db_user=$db_name
+db_pwd=$(ynh_app_setting_get --app=$app --key=mysqlpwd)
+
+#=================================================
+# CHECK VERSION
+#=================================================
+
+upgrade_type=$(ynh_check_app_version_changed)
+
+#=================================================
+# BACKUP BEFORE UPGRADE THEN ACTIVE TRAP
+#=================================================
+ynh_script_progression --message="Backing up the app before upgrading (may take a while)..." --weight=1
 
 # Backup the current version of the app
 ynh_backup_before_upgrade
-
 ynh_clean_setup () {
-	# restore it if the upgrade fails
-	ynh_restore_upgradebackup
+    # Restore it if the upgrade fails
+    ynh_restore_upgradebackup
 }
 # Exit if an error occurs during the execution of the script
 ynh_abort_if_errors
@@ -40,81 +48,98 @@ ynh_abort_if_errors
 #=================================================
 # UPGRADE SETTINGS FROM OLD INSTALL
 #=================================================
+ynh_script_progression --message="Ensuring downward compatibility..." --weight=1
 
-ynh_script_progression --message="Fixing old settings..." --weight=1
-
-if [[ ${is_public,,*} = "yes" ]]
-then
-    is_public=1
-    ynh_app_setting_set --app $app --key is_public --value 1
-fi
-
-if [[ ${is_public,,*} = "no" ]]
-then
-    is_public=0
-    ynh_app_setting_set --app $app --key is_public --value 0
-fi
-
-if [[ -z $port ]]
-then
+if [[ -z $port ]]; then
     # Find a port for SOGo
-    port=$(ynh_find_port --port 20000)
-    ynh_app_setting_set --app $app --key web_port --value $port
+    port=$(ynh_find_port --port=20000)
+    ynh_app_setting_set --app=$app --key=web_port --value=$port
 fi
 
-if [[ -z $db_name ]]
-then
+if [[ -z $db_name ]]; then
     db_name=$app
-    ynh_app_setting_set --app $app --key db_name --value $db_name
+    ynh_app_setting_set --app=$app --key=db_name --value=$db_name
 fi
 
-if [[ -z $db_user ]]
-then
+if [[ -z $db_user ]]; then
     db_user=$app
-    ynh_app_setting_set --app $app --key db_user --value $db_user
+    ynh_app_setting_set --app=$app --key=db_user --value=$db_user
 fi
 
-# Manage migration form SOGo 3.x to SOGo 4.x (Debian stretch -> Buster)
+# Cleaning legacy permissions
+if ynh_legacy_permissions_exists; then
+    ynh_legacy_permissions_delete_all
+
+    ynh_app_setting_delete --app=$app --key=is_public
+fi
+
+# Manage migrations
 ynh_script_progression --message="Migrating database if needed..."
 
-# FIXME use the new way to manage version when available on the core
-app_previous_version="$(jq -r .version /etc/yunohost/apps/$app/manifest.json | cut -d~ -f1)"
-if [[ "$app_previous_version" == 3.2.* ]]; then
+if ynh_compare_current_package_version --comparison le --version 4.0.0~ynh0; then
     ynh_replace_string --match_string __APP__ --replace_string $app --target_file migrations/3.2-4.0.sh
     ynh_replace_string --match_string __DBUSER__ --replace_string $db_user --target_file migrations/3.2-4.0.sh
     ynh_replace_string --match_string __DBPASS__ --replace_string $db_pwd --target_file migrations/3.2-4.0.sh
     bash migrations/3.2-4.0.sh
 fi
 
+if ! ynh_permission_exists --permission="sync_client"; then
+    # Create the required permissions
+    ynh_permission_create --permission="sync_client" --allowed='visitors' --auth_header=false\
+    --label="Sync client" --protected=true --show_tile=false\
+    --additional_urls="/Microsoft-Server-ActiveSync" "/principals" "/.well-known/caldav" "/.well-known/carddav"
+fi
+
 #=================================================
 # STANDARD MODIFICATIONS
 #=================================================
+# UPGRADE DEPENDENCIES
+#=================================================
+ynh_script_progression --message="Upgrading dependencies..." --weight=1
 
-# INSTALL DEPENDENCIES
-ynh_script_progression --message="Upgrading dependencies..."
-install_dependance
+ynh_install_app_dependencies $pkg_dependencies
 
-ynh_script_progression --message="Configuring application..."
+#=================================================
+# UPDATE A CONFIG FILE
+#=================================================
+ynh_script_progression --message="Configuring application..." --weight=1
 
 # Configure SOGO
-ynh_add_config --template="sogo.conf" --destination="/etc/$app/sogo.conf"
+ynh_add_config --template="../conf/sogo.conf" --destination="/etc/$app/sogo.conf"
 
 # Configure stunnel
-config_stunnel
+ynh_add_config --template="../conf/stunnel.conf" --destination="/etc/stunnel/$app.conf"
 
-# Install crontab
-config_cron
+# Enable stunnel at startup
+ynh_replace_string --match_string="ENABLED=0" --replace_string="ENABLED=1" --target_file="/etc/default/stunnel4"
 
-#Configure Nginx
+#=================================================
+# SETUP A CRON
+#=================================================
+ynh_script_progression --message="Setuping a cron..." --weight=1
+
+ynh_add_config --template="../conf/cron" --destination="/etc/cron.d/$app"
+chown root: "/etc/cron.d/$app"
+chmod 644 "/etc/cron.d/$app"
+
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+ynh_script_progression --message="Upgrading NGINX web server configuration..." --weight=1
+
 config_nginx
 
 #=================================================
-# GENERIC FINALIZATION
-#=================================================
-
 # SECURE FILES AND DIRECTORIES
-ynh_script_progression --message="Protecting directory..."
-set_permission
+#=================================================
+ynh_script_progression --message="Protecting directory..." --weight=1
+
+chown -R $app:$app /etc/$app
+chmod u=rwX,g=rX,o= -R /etc/$app
+chown -R $app:$app /var/log/$app
+chmod u=rwX,g=rX,o= -R /var/log/$app
+
+
 
 # configure the sso
 ynh_script_progression --message="Configuring permissions..."
@@ -127,20 +152,44 @@ if ! ynh_permission_exists --permission sync_client; then
         || ynh_print_warn --message="Your file /etc/ssowat/""conf.json.persistent doesn't respect the json syntax. The config file wasn't cleaned. Please clean it manually."
 else
     ynh_permission_update --permission="sync_client" --add='visitors' --label="Sync client" --protected=true --show_tile=false
-    ynh_permission_url  --permission "sync_client" --auth_header=false\
+    ynh_permission_url --permission "sync_client" --auth_header=false\
         --add_url="/Microsoft-Server-ActiveSync" "/principals" "/.well-known/caldav" "/.well-known/carddav"
 fi
 
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
 # SETUP LOGROTATE
-ynh_script_progression --message="Configuring log rotation..."
-ynh_use_logrotate --logfile /var/log/$app/sogo.log --nonappend
+#=================================================
+ynh_script_progression --message="Upgrading logrotate configuration..." --weight=1
 
-# Register service
-yunohost service add $app --log "/var/log/$app/sogo.log"
+# Use logrotate to manage app-specific logfile(s)
+ynh_use_logrotate --logfile="/var/log/$app/sogo.log" --nonappend
 
-# Restart services
-ynh_script_progression --message="Starting SOGo services..." --weight=3
-systemctl restart sogo
-systemctl restart stunnel4
+#=================================================
+# INTEGRATE SERVICE IN YUNOHOST
+#=================================================
+ynh_script_progression --message="Integrating service in YunoHost..." --weight=1
+
+yunohost service add $app --description="Groupware for E-Mail, Contacts and Calender" --log="/var/log/$app/$app.log"
+
+#=================================================
+# START SYSTEMD SERVICE
+#=================================================
+ynh_script_progression --message="Starting a systemd service..." --weight=1
+
+ynh_systemd_action --service_name=$app --action="restart" --log_path="systemd"
+ynh_systemd_action --service_name=stunnel4 --action="restart" --log_path="systemd"
+
+#=================================================
+# RELOAD NGINX
+#=================================================
+ynh_script_progression --message="Reloading NGINX web server..." --weight=1
+
+ynh_systemd_action --service_name=nginx --action=reload
+
+#=================================================
+# END OF SCRIPT
+#=================================================
 
 ynh_script_progression --message="Upgrade of $app completed" --last

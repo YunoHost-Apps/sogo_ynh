@@ -5,12 +5,10 @@
 
 ;; Test complet
     ; Manifest
-        domain="domain.tld"	(DOMAIN)
-        path="/SOGo"	(PATH)
-        admin="john"	(USER)
-        language="French"
-        is_public=1	(PUBLIC|public=1|private=0)
-        port="20000"	(PORT)
+        domain="domain.tld"
+        path="/SOGo"
+        admin="john"
+        is_public=1
     ; Checks
         pkg_linter=1
         setup_sub_dir=1
@@ -20,11 +18,12 @@
         setup_public=1
         upgrade=1
         upgrade=1   from_commit=cc07f5da79498ef948c31a99f6ace9ad0a5b9ec1
+        upgrade=1   from_commit=2fc174c57586df38506a07195decb08eed02f55f
         backup_restore=1
         multi_instance=0
-        incorrect_path=1
-        port_already_use=1 (8448)
         change_url=0
 ;;; Upgrade options
     ; commit=cc07f5da79498ef948c31a99f6ace9ad0a5b9ec1
         name=Before group permission support
+    ; commit=2fc174c57586df38506a07195decb08eed02f55f
+        name=Before refactoring

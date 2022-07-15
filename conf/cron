@@ -2,17 +2,17 @@
 
 # Vacation messages expiration
 # The credentials file should contain the sieve admin credentials (username:passwd)
-0 0 * * *      __APP__  /opt/yunohost/__APP__/sbin/sogo-tool update-autoreply -p /etc/sogo/sieve.creds
+0 0 * * *   __APP__  /opt/yunohost/__APP__/sbin/sogo-tool update-autoreply -p /etc/sogo/sieve.creds
 
 # Session cleanup - runs every minute
 #   - Ajust the nbMinutes parameter to suit your needs
 # Example: Sessions without activity since 60 minutes will be dropped:
-* * * * *      __APP__  /opt/yunohost/__APP__/sbin/sogo-tool expire-sessions 60 > /dev/null 2>&1
+* * * * *   __APP__  /opt/yunohost/__APP__/sbin/sogo-tool expire-sessions 60 > /dev/null 2>&1
 
 # Email alarms - runs every minutes
 # If you need to use SMTP AUTH for outgoing mails, specify credentials to use
 # with '-p /path/to/credentialsFile' (same format as the sieve credentials)
-* * * * *      __APP__  /opt/yunohost/__APP__/sbin/sogo-ealarms-notify > /dev/null 2>&1
+* * * * *   __APP__  /opt/yunohost/__APP__/sbin/sogo-ealarms-notify > /dev/null 2>&1
 
 # Daily backups
 #   - writes to ~sogo/backups/ by default
