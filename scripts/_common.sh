@@ -1,14 +1,14 @@
 #!/bin/bash
 
 #=================================================
-# SET ALL CONSTANTS
+# COMMON VARIABLES
 #=================================================
 
 # dependencies used by the app
 pkg_dependencies="sogo stunnel4 memcached"
 
 #=================================================
-# DEFINE ALL COMMON FONCTIONS
+# PERSONAL HELPERS
 #=================================================
 
 config_stunnel() {
@@ -60,3 +60,11 @@ set_permission() {
     chown -R $app:$app /var/log/$app
     chmod u=rwX,g=rX,o= -R /var/log/$app
 }
+
+#=================================================
+# EXPERIMENTAL HELPERS
+#=================================================
+
+#=================================================
+# FUTURE OFFICIAL HELPERS
+#=================================================

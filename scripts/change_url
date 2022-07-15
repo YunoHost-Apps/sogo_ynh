@@ -12,12 +12,12 @@ source /usr/share/yunohost/helpers
 #=================================================
 # RETRIEVE ARGUMENTS
 #=================================================
-ynh_script_progression --message="Loading installation settings..."
 
-# RETRIEVE ARGUMENTS
 old_domain=$YNH_APP_OLD_DOMAIN
-domain=$YNH_APP_NEW_DOMAIN
-path_url=$YNH_APP_NEW_PATH
+old_path=$YNH_APP_OLD_PATH
+
+new_domain=$YNH_APP_NEW_DOMAIN
+new_path="/SOGo"
 
 app=$YNH_APP_INSTANCE_NAME
 
@@ -26,31 +26,68 @@ app=$YNH_APP_INSTANCE_NAME
 #=================================================
 ynh_script_progression --message="Loading installation settings..." --weight=1
 
-port=$(ynh_app_setting_get --app=$app --key=web_port)
-admin=$(ynh_app_setting_get --app=$app --key=admin)
+# Needed for helper "ynh_add_nginx_config"
 final_path=$(ynh_app_setting_get --app=$app --key=final_path)
 
-# Check if the new path stay /SOGo if not exit
+# Add settings here as needed by your application
+port=$(ynh_app_setting_get --app=$app --key=web_port)
+admin=$(ynh_app_setting_get --app=$app --key=admin)
 
-if [[ $path_url != "/SOGo" ]]
+#=================================================
+# BACKUP BEFORE CHANGE URL THEN ACTIVE TRAP
+#=================================================
+ynh_script_progression --message="Backing up the app before changing its URL (may take a while)..."
+
+# Backup the current version of the app
+ynh_backup_before_upgrade
+ynh_clean_setup () {
+	ynh_clean_check_starting
+	# Remove the new domain config file, the remove script won't do it as it doesn't know yet its location.
+	ynh_secure_remove --file="/etc/nginx/conf.d/$new_domain.d/$app.conf"
+
+	# Restore it if the upgrade fails
+	ynh_restore_upgradebackup
+}
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+#=================================================
+# CHECK WHICH PARTS SHOULD BE CHANGED
+#=================================================
+
+change_domain=0
+if [ "$old_domain" != "$new_domain" ]
 then
-    ynh_die --message "You can't use an other path than '/SOGo'"
+	change_domain=1
+fi
+
+change_path=0
+if [ "$old_path" != "$new_path" ]
+then
+	change_path=1
 fi
 
 #=================================================
 # STANDARD MODIFICATIONS
 #=================================================
-ynh_script_progression --message="Updating NGINX configuration..."
-
 # MODIFY URL IN NGINX CONF
+#=================================================
+ynh_script_progression --message="Updating NGINX web server configuration..."
+
 nginx_conf_path=/etc/nginx/conf.d/$old_domain.d/$app.conf
 
-# Change the domain for nginx
-# Delete file checksum for the old conf file location
-ynh_delete_file_checksum --file "$nginx_conf_path"
-mv $nginx_conf_path /etc/nginx/conf.d/$domain.d/$app.conf
-# Store file checksum for the new config file location
-ynh_store_file_checksum --file "/etc/nginx/conf.d/$domain.d/$app.conf"
+# Change the domain for NGINX
+if [ $change_domain -eq 1 ]
+then
+	# Delete file checksum for the old conf file location
+	ynh_delete_file_checksum --file="$nginx_conf_path"
+	mv $nginx_conf_path /etc/nginx/conf.d/$new_domain.d/$app.conf
+	# Store file checksum for the new config file location
+	ynh_store_file_checksum --file="/etc/nginx/conf.d/$new_domain.d/$app.conf"
+fi
+
+domain=$new_domain
+path_url=$new_path
 
 #Configure Nginx
 config_nginx

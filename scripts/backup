@@ -15,7 +15,6 @@ source /usr/share/yunohost/helpers
 #=================================================
 
 ynh_clean_setup () {
-	### Remove this function if there's nothing to clean before calling the remove script.
 	true
 }
 # Exit if an error occurs during the execution of the script
@@ -43,27 +42,14 @@ ynh_print_info --message="Declaring files to be backed up..."
 ynh_backup --src_path="/etc/nginx/conf.d/$domain.d/$app.conf"
 
 #=================================================
-# BACKUP SOGo CONFIGURATION
+# SPECIFIC BACKUP
+#=================================================
+# BACKUP VARIOUS FILES
 #=================================================
 
 ynh_backup --src_path="/etc/$app"
-
-#=================================================
-# BACKUP STUNNEL CONFIGURATION
-#=================================================
-
 ynh_backup --src_path="/etc/stunnel/$app.conf"
-
-#=================================================
-# BACKUP CRON
-#=================================================
-
 ynh_backup --src_path="/etc/cron.d/$app"
-
-#=================================================
-# BACKUP LOGS
-#=================================================
-
 ynh_backup --src_path="/var/log/$app"
 
 #=================================================

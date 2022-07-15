@@ -4,13 +4,13 @@ After=network.target
 After=mariadb.service
 
 [Service]
+Type=forking
+User=__APP__
 Environment="PREFORK=3"
 Environment="LD_LIBRARY_PATH=/lib:/usr/lib:/opt/yunohost/__APP__/Library/Libraries/sogo:/opt/yunohost/__APP__/Local/Library/Libraries/sogo"
 EnvironmentFile=-/etc/default/__APP__
-Type=forking
 ExecStart=/opt/yunohost/__APP__/sbin/sogod -WOWorkersCount ${PREFORK} -WOPidFile /run/__APP__/sogo.pid -WOLogFile /var/log/__APP__/sogo.log
 PIDFile=/run/__APP__/sogo.pid
-User=__APP__
 
 # Sandboxing options to harden security
 # Depending on specificities of your service/app, you may need to tweak these

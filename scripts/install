@@ -14,8 +14,7 @@ source /usr/share/yunohost/helpers
 #=================================================
 
 ynh_clean_setup () {
-    ### Remove this function if there's nothing to clean before calling the remove script.
-    true
+	ynh_clean_check_starting
 }
 # Exit if an error occurs during the execution of the script
 ynh_abort_if_errors
@@ -25,8 +24,9 @@ ynh_abort_if_errors
 #=================================================
 
 domain=$YNH_APP_ARG_DOMAIN
-admin=$YNH_APP_ARG_ADMIN
+path_url="/SOGo"
 is_public=$YNH_APP_ARG_IS_PUBLIC
+admin=$YNH_APP_ARG_ADMIN
 
 app=$YNH_APP_INSTANCE_NAME
 
@@ -34,9 +34,6 @@ app=$YNH_APP_INSTANCE_NAME
 # CHECK IF THE APP CAN BE INSTALLED WITH THESE ARGS
 #=================================================
 ynh_script_progression --message="Validating installation parameters..." --weight=1
-
-# Set variable
-path_url="/SOGo"
 
 # Register (book) web path
 ynh_webpath_register --app=$app --domain=$domain --path_url=$path_url
@@ -81,6 +78,16 @@ ynh_app_setting_set --app=$app --key=db_name --value=$db_name
 ynh_mysql_setup_db --db_user=$db_user --db_name=$db_name
 
 #=================================================
+# NGINX CONFIGURATION
+#=================================================
+ynh_script_progression --message="Configuring NGINX web server..." --weight=1
+
+# Create a dedicated NGINX config
+config_nginx
+
+#=================================================
+# SPECIFIC SETUP
+#=================================================
 # ADD A CONFIGURATION
 #=================================================
 ynh_script_progression --message="Configuring application..." --weight=3
@@ -106,13 +113,6 @@ chown root: "/etc/cron.d/$app"
 chmod 644 "/etc/cron.d/$app"
 
 #=================================================
-# NGINX CONFIGURATION
-#=================================================
-ynh_script_progression --message="Configuring NGINX web server..." --weight=1
-
-config_nginx
-
-#=================================================
 # SECURE FILES AND DIRECTORIES
 #=================================================
 ynh_script_progression --message="Protecting directory..." --weight=1
@@ -129,6 +129,7 @@ chmod u=rwX,g=rX,o= -R /var/log/$app
 #=================================================
 ynh_script_progression --message="Configuring log rotation..." --weight=1
 
+# Use logrotate to manage application logfile(s)
 ynh_use_logrotate --logfile="/var/log/$app/sogo.log" --nonappend
 
 #=================================================
@@ -143,6 +144,7 @@ yunohost service add $app --description="Groupware for E-Mail, Contacts and Cale
 #=================================================
 ynh_script_progression --message="Starting a systemd service..." --weight=1
 
+# Start a systemd service
 ynh_systemd_action --service_name=$app --action="restart" --log_path="systemd"
 ynh_systemd_action --service_name=stunnel4 --action="restart" --log_path="systemd"
 
@@ -151,14 +153,15 @@ ynh_systemd_action --service_name=stunnel4 --action="restart" --log_path="system
 #=================================================
 ynh_script_progression --message="Configuring permissions..." --weight=1
 
+# Make app public if necessary
 if [ $is_public -eq 1 ]
 then
-    ynh_permission_update --permission="main" --add="visitors"
+	# Everyone can access the app.
+	# The "main" permission is automatically created before the install script.
+	ynh_permission_update --permission="main" --add="visitors"
 fi
 
-ynh_permission_create --permission="sync_client" --allowed='visitors' --auth_header=false\
-    --label="Sync client" --protected=true --show_tile=false\
-    --additional_urls="/Microsoft-Server-ActiveSync" "/principals" "/.well-known/caldav" "/.well-known/carddav"
+ynh_permission_create --permission="sync_client" --allowed='visitors' --auth_header=false --label="Sync client" --protected=true --show_tile=false --additional_urls="/Microsoft-Server-ActiveSync" "/principals" "/.well-known/caldav" "/.well-known/carddav"
 
 #=================================================
 # RELOAD NGINX
