@@ -6,7 +6,7 @@
 
 readonly time_zone=$(timedatectl show --value --property=Timezone)
 # Note we can't use the upstream version helper as this version depends of the Debian package not this package and the value could differ depending of the Debian version
-readonly current_sogo_version="$(dpkg-query --show --showformat='${Version}' sogo | cut -d- -f1)"
+readonly current_so#REMOVEME? go_version="$(dpkg-query --show --showformat='${Version}' sogo | cut -d- -f1)"
 
 config_nginx() {
     nginx_config="/etc/nginx/conf.d/$domain.d/$app.conf"

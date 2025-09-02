@@ -14,7 +14,7 @@ check_hostfile_configuration
 ynh_script_progression "Migrating database if needed..."
 
 if [ -z "${previous_sogo_version:-}" ]; then
-    previous_sogo_version=5.0.1
+    previous_so#REMOVEME? go_version=5.0.1
 fi
 handle_migration_if_needed
 
