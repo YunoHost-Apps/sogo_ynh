@@ -4,8 +4,8 @@ packaging_format = 2
 
 id = "sogo"
 name = "SOGo"
-description.en = "Opensource groupware for E-Mail, Contacts and Calender"
-description.fr = "Groupware opensource pour les e-mail, contacts et calendrier"
+description.en = "Share calendars, address books and mails in your organisation"
+description.fr = "Partagez calendriers, carnets d'adresse et e-mails dans votre organisation"
 
 # Note the upstream version is not really the real version of SOGo as it's provided by Debian
 # and it's depends on the debian version
