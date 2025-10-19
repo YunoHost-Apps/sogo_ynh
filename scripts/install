@@ -157,7 +157,7 @@ then
 fi
 
 ynh_permission_create --permission="sync_client" --allowed='visitors' --auth_header=false\
-    --label="Sync client" --protected=true --show_tile=false\
+    --protected=true --show_tile=false\
     --additional_urls="$domain/Microsoft-Server-ActiveSync" "$domain/principals" "$domain/.well-known/caldav" "$domain/.well-known/carddav"
 
 #=================================================
