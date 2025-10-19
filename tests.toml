@@ -5,6 +5,6 @@ test_format = 1.0
 [default]
 
     test_upgrade_from.cc07f5da79498ef948c31a99f6ace9ad0a5b9ec1.name = "Before group permission support"
-    test_upgrade_from.2fc174c57586df38506a07195decb08eed02f55f.name = "Before refactoring"
-    test_upgrade_from.732e6d2962ed7e0fb9cb7a807e2b095adeab35c3.name = "last packagingv1 version"
+    test_upgrade_from.b9235d111a3754ed8cccd391fa88aee52e19d3f3.name = "Before refactoring (branch Old_version_for_CI2)"
+    test_upgrade_from.b3066e86b2cee737c41e3ddebc16c74f4788a6cb.name = "last packagingv1 version (branch Old_version_for_CI3)"
     test_upgrade_from.e3bb393e5e40ddb2a3c01cfc23b9f43f27f4ff27.name = "Before helper 2.1"
