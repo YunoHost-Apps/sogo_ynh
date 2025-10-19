@@ -84,7 +84,7 @@ set_permission
 # configure the sso
 ynh_script_progression --message="Configuring permissions..."
 ynh_permission_create --permission="sync_client" --allowed='visitors' --auth_header=false\
-    --label="Sync client" --protected=true --show_tile=false\
+    --protected=true --show_tile=false\
     --additional_urls="/Microsoft-Server-ActiveSync" "/principals" "/.well-known/caldav" "/.well-known/carddav"
 
 if [ "$is_public" == '1' ];
