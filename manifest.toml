@@ -11,7 +11,7 @@ description.fr = "Partagez calendriers, carnets d'adresse et e-mails dans votre 
 # and it's depends on the debian version
 # at this point we could have SOGo 5.0.1 on Debian 11 or SOGo 5.8.0 on Debian 12
 # So this value it's more the maximum supported version by the package (currently the version provided by Debian 12)
-version = "5.8.0~ynh7"
+version = "5.8.0~ynh8"
 
 maintainers = ["Josué Tille"]
 
