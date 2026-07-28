@@ -11,7 +11,7 @@ description.fr = "Partagez calendriers, carnets d'adresse et e-mails dans votre 
 # and it's depends on the debian version
 # at this point we could have SOGo 5.0.1 on Debian 11 or SOGo 5.8.0 on Debian 12
 # So this value it's more the maximum supported version by the package (currently the version provided by Debian 12)
-version = "5.8.0~ynh8"
+version = "5.8.0~ynh9"
 
 maintainers = ["Josué Tille"]
 
@@ -30,7 +30,8 @@ helpers_version = "2.1"
 architectures = "all"
 multi_instance = false
 ldap = true
-sso = true
+# Temporarily disabled until we migrate to OIDC or SOGo 6
+sso = false
 disk = "200M"
 ram.build = "300M"
 ram.runtime = "200M"
@@ -57,6 +58,7 @@ ram.runtime = "200M"
 
     [resources.permissions]
     main.url = "/"
+    main.auth_header = false
 
     sync_client.label = "Sync client"
     sync_client.show_tile = false
