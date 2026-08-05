@@ -47,6 +47,9 @@ location = /.well-known/carddav {
 }'
 
     ynh_config_add_nginx
+    if [ "$(lsb_release --codename --short)" == 'trixie' ]; then
+        ynh_replace --match='/usr/lib/GNUstep' --replace='/usr/share/GNUstep' --file="$nginx_config"
+    fi
 
     if ! is_url_handled -d "$domain" -p "/principals"; then
         echo "$principals_block" >> "$nginx_config"
