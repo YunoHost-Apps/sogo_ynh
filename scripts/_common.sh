@@ -47,6 +47,9 @@ location = /.well-known/carddav {
 }'
 
     ynh_config_add_nginx
+    if [ "$(lsb_release --codename --short)" == 'trixie' ]; then
+        ynh_replace --match='/usr/lib/GNUstep' --replace='/usr/share/GNUstep' --file="$nginx_config"
+    fi
 
     if ! is_url_handled -d "$domain" -p "/principals"; then
         echo "$principals_block" >> "$nginx_config"
@@ -105,13 +108,20 @@ is_url_handled() {
 }
 
 handle_migration_if_needed() {
-    if dpkg --compare-versions "$current_sogo_version" gt 5.8.0; then
+    if dpkg --compare-versions "$current_sogo_version" gt 5.12.1; then
         ynh_print_warn "Currently a SOGo version > 5.8.0 is not supported by this package. Use it at your own risk."
     fi
     if [ "$current_sogo_version" != "$previous_sogo_version" ]; then
         # Migration from 5.0.1 -> 5.8.0
         if dpkg --compare-versions "$previous_sogo_version" lt 5.8.0; then
             ynh_mysql_db_shell <<< 'DROP TABLE IF EXISTS sogo_sessions_folder;'
+        fi
+        if dpkg --compare-versions "$previous_sogo_version" lt 5.12.1; then
+            # normally this migration should have been executed before but it seem to be forgotten
+            bash /usr/share/doc/sogo/sql-update-5.5.1_to_5.6.0.sh
+        fi
+        if dpkg --compare-versions "$previous_sogo_version" lt 5.12.1; then
+            bash migrations/sql-update-5.8.4_to_5.9.0.sh
         fi
     fi
 }
