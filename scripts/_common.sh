@@ -57,7 +57,7 @@ location = /.well-known/carddav {
     if ! is_url_handled -d "$domain" -p "/.well-known/caldav"; then
         echo "$caldav_block" >> "$nginx_config"
     fi
-    if ! is_url_handled -d "$domain" -p "/.wellk-nown/carddav"; then
+    if ! is_url_handled -d "$domain" -p "/.well-known/carddav"; then
         echo "$carddav_block" >> "$nginx_config"
     fi
     ynh_store_file_checksum "$nginx_config"
